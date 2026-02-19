@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 from datetime import datetime
 
-API_URL = "http://127.0.0.1:8000"
+API_URL = "https://build-app-project.onrender.com"
 
 st.set_page_config(page_title="מערכת ניהול בנייה", page_icon="🏗️", layout="wide")
 
@@ -342,4 +342,5 @@ with main_tab_personal:
                     "date": pt_date.strftime("%Y-%m-%d")
                 })
                 st.success("✅ התווסף בהצלחה ללוח השנה בצד!")
+
                 st.rerun()
