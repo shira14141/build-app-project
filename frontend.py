@@ -107,7 +107,7 @@ except Exception as e:
 # =========================================================
 # המסך הראשי
 # =========================================================
-st.title("🏗️ מערכת לניהול פרויקטים בבנייה")
+st.title("🏗️ Build App")
 
 main_tab_dashboard, main_tab_projects, main_tab_personal = st.tabs([
     "📊 לוח בקרה הנהלה",
