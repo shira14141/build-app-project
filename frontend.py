@@ -108,26 +108,6 @@ except Exception as e:
 # המסך הראשי
 # =========================================================
 st.title("🏗️ Build App")
-
-st.markdown("### 📊 תמונת מצב פיננסית")
-
-# יצירת 3 עמודות רוחב שוות
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric(label="תקציב כולל", value="₪1,500,000")
-
-with col2:
-    st.metric(label="הוצאות בפועל", value="₪850,000", delta="-₪15,000 חריגה")
-
-with col3:
-    st.metric(label="יתרה מתקציב", value="₪650,000", delta="תקין", delta_color="normal")
-
-st.divider()  # קו הפרדה יוקרתי
-# ==========================================
-
-# --- המשך הקוד הקיים שלך (טפסים, כפתורים וכו') ---
-
 main_tab_dashboard, main_tab_projects, main_tab_personal = st.tabs([
     "📊 לוח בקרה הנהלה",
     "🏗️ ניהול פרויקטים",
