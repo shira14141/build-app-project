@@ -5,58 +5,7 @@ from datetime import datetime
 API_URL = "https://build-app-project.onrender.com"
 
 st.set_page_config(page_title="מערכת ניהול בנייה", page_icon="🏗️", layout="wide")
-# =========================================================
-# הזרקת עיצוב מותאם אישית (Custom CSS)
-# =========================================================
-st.markdown("""
-<style>
-    /* עיצוב כפתורים מודרני עם אפקט ריחוף */
-    .stButton>button {
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        border: 1px solid #e0e0e0;
-    }
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        border-color: #ff4b4b;
-        color: #ff4b4b;
-    }
 
-    /* עיצוב קוביות הנתונים (Metrics) כ"קלפים" (Cards) */
-    div[data-testid="metric-container"] {
-        background-color: #ffffff;
-        border: 1px solid #f0f2f6;
-        padding: 15px 20px;
-        border-radius: 12px;
-        box-shadow: 2px 4px 15px rgba(0,0,0,0.05);
-        border-right: 4px solid #ff4b4b;
-    }
-
-    /* עיצוב תפריט הצד (Sidebar) */
-    [data-testid="stSidebar"] {
-        background-color: #f8f9fa;
-        box-shadow: -2px 0 10px rgba(0,0,0,0.05);
-    }
-
-    /* עיצוב הטופס (Forms) */
-    [data-testid="stForm"] {
-        background-color: #fafbfc;
-        border-radius: 12px;
-        border: 1px solid #e1e4e8;
-        padding: 20px;
-    }
-
-    /* עידון כותרות של הלשוניות (Tabs) */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 6px 6px 0px 0px;
-        padding: 10px 20px;
-    }
-</style>
-""", unsafe_allow_html=True)
 AVAILABLE_PARTNERS = [
     "יוסי הקבלן", "דנה האדריכלית", "משה מפקח הבנייה",
     "אבי אינסטלטור", "שירה", "רוני קבלן חשמל"
