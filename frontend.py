@@ -45,6 +45,37 @@ if not st.session_state["logged_in"]:
     st.stop()
 
 # =========================================================
+# הזרקת עיצוב בהשראת ה-Mockup
+# =========================================================
+st.markdown("""
+<style>
+    /* עיצוב תפריט הצד (גוון בז'/עץ עדין) */
+    [data-testid="stSidebar"] {
+        background-color: #E8DECC !important;
+    }
+
+    /* עיצוב קוביות הנתונים (מראה ה"בטון" המעוגל עם צל) */
+    div[data-testid="metric-container"] {
+        background-color: #E2E8F0;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.05);
+        border: 1px solid #CBD5E1;
+    }
+
+    /* העלמת הפס העליון של Streamlit למראה נקי יותר */
+    header {
+        visibility: hidden;
+    }
+
+    /* עיצוב רקע האתר המרכזי (לבן נקי) */
+    .stApp {
+        background-color: #F8FAFC;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# =========================================================
 # תפריט הצד (Sidebar) - לוח השנה והיומן
 # =========================================================
 current_user = st.session_state["current_user"]
