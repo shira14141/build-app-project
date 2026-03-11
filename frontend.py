@@ -44,17 +44,43 @@ if not st.session_state["logged_in"]:
                     st.error("שגיאת התחברות לשרת הנתונים. ודאי ש-main.py פועל.")
     st.stop()
 
+import streamlit as st
+import requests
+from datetime import datetime
+
+# הורדנו את האימוג'י מכותרת הדפדפן
+st.set_page_config(page_title="מערכת ניהול בנייה", layout="wide")
+
 # =========================================================
-# הזרקת עיצוב בהשראת ה-Mockup
+# הזרקת CSS למראה מקצועי ו"בוגר" (אפור-בהיר/כחול)
 # =========================================================
 st.markdown("""
 <style>
-    /* עיצוב תפריט הצד (גוון בז'/עץ עדין) */
-    [data-testid="stSidebar"] {
-        background-color: #E8DECC !important;
+    /* 1. רקע הדף הכללי - אפור בהיר ונקי */
+    .stApp {
+        background-color: #F8FAFC;
     }
 
-    /* עיצוב קוביות הנתונים (מראה ה"בטון" המעוגל עם צל) */
+    /* 2. עיצוב תפריט הצד - גוון כחול כהה ויוקרתי */
+    [data-testid="stSidebar"] {
+        background-color: #262730 !important;
+        color: white;
+    }
+
+    /* שינוי צבע הטקסט הכללי בתפריט הצד ללבן כדי שייקרא על הכחול */
+    [data-testid="stSidebar"] * {
+        color: white !important;
+    }
+
+    /* עיצוב כפתורים בתפריט הצד */
+    [data-testid="stSidebar"] .stButton > button {
+        background-color: #CBD5E1;
+        color: #262730 !important;
+        border: none;
+        border-radius: 8px;
+    }
+
+    /* 3. עיצוב קוביות הנתונים (מראה "בטון" מעוגל עם צל) */
     div[data-testid="metric-container"] {
         background-color: #E2E8F0;
         border-radius: 15px;
@@ -63,17 +89,29 @@ st.markdown("""
         border: 1px solid #CBD5E1;
     }
 
-    /* העלמת הפס העליון של Streamlit למראה נקי יותר */
-    header {
-        visibility: hidden;
+    /* 4. עיצוב הכותרות הראשיות */
+    .stMarkdown h1 {
+        color: #262730;
     }
 
-    /* עיצוב רקע האתר המרכזי (לבן נקי) */
-    .stApp {
-        background-color: #F8FAFC;
+    /* 5. עיצוב הלשוניות (Tabs) */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: transparent;
+        border-bottom: 2px solid #CBD5E1;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: transparent;
+        border-radius: 10px 10px 0 0;
+        margin-right: 5px;
+        color: #262730 !important;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: #E2E8F0;
     }
 </style>
 """, unsafe_allow_html=True)
+
+# ... (המשך הקוד שלך מ-AVAILABLE_PARTNERS ואילך)
 
 # =========================================================
 # תפריט הצד (Sidebar) - לוח השנה והיומן
