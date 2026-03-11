@@ -6,8 +6,25 @@ from datetime import datetime
 
 API_URL = "https://build-app-project.onrender.com"
 
-# הורדנו את האימוג'י מכותרת הדפדפן
+# הגדרת דף בודדת ויחידה (חייבת להיות פה למעלה)
 st.set_page_config(page_title="מערכת ניהול בנייה", layout="wide")
+
+# =========================================================
+# הזרקת CSS למראה מקצועי ו"בוגר"
+# =========================================================
+st.markdown("""
+<style>
+    .stApp { background-color: #F8FAFC; }
+    [data-testid="stSidebar"] { background-color: #262730 !important; color: white; }
+    [data-testid="stSidebar"] * { color: white !important; }
+    [data-testid="stSidebar"] .stButton > button { background-color: #CBD5E1; color: #262730 !important; border: none; border-radius: 8px; }
+    div[data-testid="metric-container"] { background-color: #E2E8F0; border-radius: 15px; padding: 20px; box-shadow: 0px 4px 10px rgba(0,0,0,0.05); border: 1px solid #CBD5E1; }
+    .stMarkdown h1 { color: #262730; }
+    .stTabs [data-baseweb="tab-list"] { background-color: transparent; border-bottom: 2px solid #CBD5E1; }
+    .stTabs [data-baseweb="tab"] { background-color: transparent; border-radius: 10px 10px 0 0; margin-right: 5px; color: #262730 !important; }
+    .stTabs [data-baseweb="tab"]:hover { background-color: #E2E8F0; }
+</style>
+""", unsafe_allow_html=True)
 
 AVAILABLE_PARTNERS = [
     "יוסי הקבלן", "דנה האדריכלית", "משה מפקח הבנייה",
@@ -46,75 +63,8 @@ if not st.session_state["logged_in"]:
                     st.error("שגיאת התחברות לשרת הנתונים. ודאי ש-main.py פועל.")
     st.stop()
 
-import streamlit as st
-import requests
-from datetime import datetime
-
-# הורדנו את האימוג'י מכותרת הדפדפן
-st.set_page_config(page_title="מערכת ניהול בנייה", layout="wide")
-
 # =========================================================
-# הזרקת CSS למראה מקצועי ו"בוגר" (אפור-בהיר/כחול)
-# =========================================================
-st.markdown("""
-<style>
-    /* 1. רקע הדף הכללי - אפור בהיר ונקי */
-    .stApp {
-        background-color: #F8FAFC;
-    }
-
-    /* 2. עיצוב תפריט הצד - גוון כחול כהה ויוקרתי */
-    [data-testid="stSidebar"] {
-        background-color: #262730 !important;
-        color: white;
-    }
-
-    /* שינוי צבע הטקסט הכללי בתפריט הצד ללבן כדי שייקרא על הכחול */
-    [data-testid="stSidebar"] * {
-        color: white !important;
-    }
-
-    /* עיצוב כפתורים בתפריט הצד */
-    [data-testid="stSidebar"] .stButton > button {
-        background-color: #CBD5E1;
-        color: #262730 !important;
-        border: none;
-        border-radius: 8px;
-    }
-
-    /* 3. עיצוב קוביות הנתונים (מראה "בטון" מעוגל עם צל) */
-    div[data-testid="metric-container"] {
-        background-color: #E2E8F0;
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.05);
-        border: 1px solid #CBD5E1;
-    }
-
-    /* 4. עיצוב הכותרות הראשיות */
-    .stMarkdown h1 {
-        color: #262730;
-    }
-
-    /* 5. עיצוב הלשוניות (Tabs) */
-    .stTabs [data-baseweb="tab-list"] {
-        background-color: transparent;
-        border-bottom: 2px solid #CBD5E1;
-    }
-    .stTabs [data-baseweb="tab"] {
-        background-color: transparent;
-        border-radius: 10px 10px 0 0;
-        margin-right: 5px;
-        color: #262730 !important;
-    }
-    .stTabs [data-baseweb="tab"]:hover {
-        background-color: #E2E8F0;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# =========================================================
-# תפריט הצד (Sidebar) - לוח השנה והיומן
+# תפריט הצד (Sidebar)
 # =========================================================
 current_user = st.session_state["current_user"]
 
@@ -215,57 +165,47 @@ with main_tab_dashboard:
                         if t['status'] in task_counts:
                             task_counts[t['status']] += 1
 
-                            # ==========================================
-                            # אזור הגרפים המשודרגים (Plotly)
-                            # ==========================================
-                            # ==========================================
-                            # אזור הגרפים המשודרגים (Plotly)
-                            # ==========================================
-                            g_col1, g_col2 = st.columns(2)
+                # ==========================================
+                # אזור הגרפים (הוצא מחוץ ללולאת הספירה!)
+                # ==========================================
+                g_col1, g_col2 = st.columns(2)
 
-                            with g_col1:
-                                st.markdown("<h5 style='color: #262730; text-align: center;'>התפלגות סטטוס משימות</h5>",
-                                            unsafe_allow_html=True)
-                                if sum(task_counts.values()) > 0:
-                                    df_tasks = pd.DataFrame(list(task_counts.items()), columns=['סטטוס', 'כמות'])
-                                    fig1 = px.pie(df_tasks, values='כמות', names='סטטוס', hole=0.65,
-                                                  color_discrete_sequence=['#CBD5E1', '#94A3B8', '#1E3A8A'])
-                                    fig1.update_traces(textposition='inside', textinfo='percent+label',
-                                                       hoverinfo='label+percent+name')
-                                    fig1.update_layout(margin=dict(t=20, b=20, l=20, r=20), showlegend=False,
-                                                       paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                                    st.plotly_chart(fig1, use_container_width=True)
-                                else:
-                                    st.info("אין נתונים עדיין")
+                with g_col1:
+                    st.markdown("<h5 style='color: #262730; text-align: center;'>התפלגות סטטוס משימות</h5>", unsafe_allow_html=True)
+                    if sum(task_counts.values()) > 0:
+                        df_tasks = pd.DataFrame(list(task_counts.items()), columns=['סטטוס', 'כמות'])
+                        fig1 = px.pie(df_tasks, values='כמות', names='סטטוס', hole=0.65,
+                                      color_discrete_sequence=['#CBD5E1', '#94A3B8', '#1E3A8A'])
+                        fig1.update_traces(textposition='inside', textinfo='percent+label', hoverinfo='label+percent+name')
+                        fig1.update_layout(margin=dict(t=20, b=20, l=20, r=20), showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                        st.plotly_chart(fig1, use_container_width=True)
+                    else:
+                        st.info("אין נתונים עדיין")
 
-                            with g_col2:
-                                st.markdown(
-                                    "<h5 style='color: #262730; text-align: center;'>תקציב מול הוצאות לפי פרויקט</h5>",
-                                    unsafe_allow_html=True)
+                with g_col2:
+                    st.markdown("<h5 style='color: #262730; text-align: center;'>תקציב מול הוצאות לפי פרויקט</h5>", unsafe_allow_html=True)
 
-                                # ---> הנה השורות שהיו חסרות! חישוב הנתונים מתוך הפרויקטים <---
-                                financial_data = {}
-                                for p in projects:
-                                    p_exp = sum(e['final_price'] for e in p.get('expenses', []))
-                                    financial_data[p['name']] = {"תקציב": p['initial_budget'], "הוצאות": p_exp}
+                    financial_data = {}
+                    for p in projects:
+                        p_exp = sum(e['final_price'] for e in p.get('expenses', []))
+                        financial_data[p['name']] = {"תקציב": p['initial_budget'], "הוצאות": p_exp}
 
-                                if financial_data:
-                                    # יצירת גרף עמודות כפול ונקי
-                                    df_fin_list = []
-                                    for name, data in financial_data.items():
-                                        df_fin_list.append({"פרויקט": name, "סוג": "תקציב", "סכום": data["תקציב"]})
-                                        df_fin_list.append({"פרויקט": name, "סוג": "הוצאות", "סכום": data["הוצאות"]})
+                    if financial_data:
+                        df_fin_list = []
+                        for name, data in financial_data.items():
+                            df_fin_list.append({"פרויקט": name, "סוג": "תקציב", "סכום": data["תקציב"]})
+                            df_fin_list.append({"פרויקט": name, "סוג": "הוצאות", "סכום": data["הוצאות"]})
 
-                                    df_fin = pd.DataFrame(df_fin_list)
-                                    fig2 = px.bar(df_fin, x='פרויקט', y='סכום', color='סוג', barmode='group',
-                                                  color_discrete_map={"תקציב": "#CBD5E1", "הוצאות": "#1E3A8A"})
-                                    fig2.update_layout(margin=dict(t=20, b=20, l=0, r=0),
-                                                       legend=dict(orientation="h", yanchor="bottom", y=1.02,
-                                                                   xanchor="center", x=0.5),
-                                                       paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                                    st.plotly_chart(fig2, use_container_width=True)
-                                else:
-                                    st.info("אין נתונים פיננסיים עדיין")
+                        df_fin = pd.DataFrame(df_fin_list)
+                        fig2 = px.bar(df_fin, x='פרויקט', y='סכום', color='סוג', barmode='group',
+                                      color_discrete_map={"תקציב": "#CBD5E1", "הוצאות": "#1E3A8A"})
+                        fig2.update_layout(margin=dict(t=20, b=20, l=0, r=0),
+                                           legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+                                           paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                        st.plotly_chart(fig2, use_container_width=True)
+                    else:
+                        st.info("אין נתונים פיננסיים עדיין")
+
                 st.divider()
                 st.markdown("<h4 style='color: #262730;'>מנוע תובנות וניהול סיכונים</h4>", unsafe_allow_html=True)
                 insights, task_load = [], {}
@@ -275,14 +215,11 @@ with main_tab_dashboard:
                     if p_budget > 0:
                         spent_pct = (p_exp / p_budget) * 100
                         tasks = p.get('tasks', [])
-                        done_pct = (len([t for t in tasks if t['status'] == 'בוצע']) / len(
-                            tasks) * 100) if tasks else 100
+                        done_pct = (len([t for t in tasks if t['status'] == 'בוצע']) / len(tasks) * 100) if tasks else 100
                         if spent_pct > 80 and done_pct < 50:
-                            insights.append(
-                                f"סיכון גבוה '{p['name']}': נוצלו {spent_pct:.0f}% מהתקציב, אבל רק {done_pct:.0f}% מהמשימות הושלמו.")
+                            insights.append(f"סיכון גבוה '{p['name']}': נוצלו {spent_pct:.0f}% מהתקציב, אבל רק {done_pct:.0f}% מהמשימות הושלמו.")
                         elif spent_pct > 90:
-                            insights.append(
-                                f"חריגת תקציב קרובה '{p['name']}': נוצלו {spent_pct:.0f}% מהתקציב ההתחלתי.")
+                            insights.append(f"חריגת תקציב קרובה '{p['name']}': נוצלו {spent_pct:.0f}% מהתקציב ההתחלתי.")
                     for t in p.get('tasks', []):
                         if t['status'] != 'בוצע': task_load[t['assigned_to']] = task_load.get(t['assigned_to'], 0) + 1
 
@@ -292,8 +229,7 @@ with main_tab_dashboard:
                     st.success("ניתוח נתונים: כל הפרויקטים מאוזנים ואין חריגות תקציב.")
                 if task_load:
                     busiest_worker = max(task_load, key=task_load.get)
-                    st.info(
-                        f"ניהול משאבים: שים לב, {busiest_worker} עמוס כרגע ({task_load[busiest_worker]} משימות פתוחות).")
+                    st.info(f"ניהול משאבים: שים לב, {busiest_worker} עמוס כרגע ({task_load[busiest_worker]} משימות פתוחות).")
     except Exception as e:
         st.error("לא ניתן לטעון את נתוני לוח הבקרה.")
 
@@ -330,10 +266,8 @@ with main_tab_projects:
             else:
                 for proj in projects:
                     with st.expander(f"{proj['name']} (מזהה: {proj['id']})"):
-                        tab_tasks, tab_budget, tab_files = st.tabs(
-                            ["משימות הפרויקט", "תקציב הפרויקט", "קבצי הפרויקט"])
+                        tab_tasks, tab_budget, tab_files = st.tabs(["משימות הפרויקט", "תקציב הפרויקט", "קבצי הפרויקט"])
 
-                        # -- משימות --
                         with tab_tasks:
                             if proj['tasks']:
                                 for task in sorted(proj['tasks'], key=lambda x: x['priority'], reverse=True):
@@ -343,26 +277,18 @@ with main_tab_projects:
                                     t_c1.write(f"{task_done} {task_urgency} **{task['title']}** (אחראי: {task['assigned_to']})")
                                     new_status = t_c2.selectbox("סטטוס", ["ממתין", "בתהליך", "בוצע"],
                                                                 index=["ממתין", "בתהליך", "בוצע"].index(task['status']),
-                                                                key=f"p_{proj['id']}_t_{task['id']}",
-                                                                label_visibility="collapsed")
-                                    if new_status != task['status']: requests.patch(
-                                        f"{API_URL}/projects/{proj['id']}/tasks/{task['id']}/status?new_status={new_status}"); st.rerun()
-                                    if t_c3.button("מחק", key=f"del_p_{proj['id']}_t_{task['id']}"): requests.delete(
-                                        f"{API_URL}/projects/{proj['id']}/tasks/{task['id']}"); st.rerun()
+                                                                key=f"p_{proj['id']}_t_{task['id']}", label_visibility="collapsed")
+                                    if new_status != task['status']: requests.patch(f"{API_URL}/projects/{proj['id']}/tasks/{task['id']}/status?new_status={new_status}"); st.rerun()
+                                    if t_c3.button("מחק", key=f"del_p_{proj['id']}_t_{task['id']}"): requests.delete(f"{API_URL}/projects/{proj['id']}/tasks/{task['id']}"); st.rerun()
                                     st.divider()
                             with st.form(f"add_task_{proj['id']}"):
                                 c1, c2, c3 = st.columns(3)
                                 t_title = c1.text_input("תיאור המשימה")
-                                t_assignee = c2.selectbox("שיוך לצוות",
-                                                          options=proj['partners'] if proj['partners'] else [
-                                                              "ללא שיוך"])
+                                t_assignee = c2.selectbox("שיוך לצוות", options=proj['partners'] if proj['partners'] else ["ללא שיוך"])
                                 t_priority = c3.slider("דחיפות", 1, 5, 3)
                                 if st.form_submit_button("הוסף משימה"):
-                                    if t_title: requests.post(f"{API_URL}/projects/{proj['id']}/tasks/",
-                                                              json={"title": t_title, "assigned_to": t_assignee,
-                                                                    "priority": t_priority}); st.rerun()
+                                    if t_title: requests.post(f"{API_URL}/projects/{proj['id']}/tasks/", json={"title": t_title, "assigned_to": t_assignee, "priority": t_priority}); st.rerun()
 
-                        # -- תקציב --
                         with tab_budget:
                             total_expenses = sum(exp['final_price'] for exp in proj.get('expenses', []))
                             remaining_budget = proj['initial_budget'] - total_expenses
@@ -377,37 +303,24 @@ with main_tab_projects:
 
                             with st.form(f"add_exp_{proj['id']}"):
                                 cat_opts = {"101": "יציקת בטון", "102": "בניית קיר", "103": "נקודת חשמל"}
-                                e_cat = st.selectbox("סעיף דקל", list(cat_opts.keys()),
-                                                     format_func=lambda x: f"{x} - {cat_opts[x]}")
+                                e_cat = st.selectbox("סעיף דקל", list(cat_opts.keys()), format_func=lambda x: f"{x} - {cat_opts[x]}")
                                 e_price = st.number_input("מחיר מותאם (0 למקורי)", min_value=0.0, step=50.0)
                                 if st.form_submit_button("רישום הוצאה"):
-                                    requests.post(f"{API_URL}/projects/{proj['id']}/expenses/",
-                                                  json={"catalog_id": e_cat,
-                                                        "custom_price": e_price if e_price > 0 else None})
+                                    requests.post(f"{API_URL}/projects/{proj['id']}/expenses/", json={"catalog_id": e_cat, "custom_price": e_price if e_price > 0 else None})
                                     st.rerun()
 
-                        # -- קבצים --
                         with tab_files:
                             if proj.get('files'):
                                 for f in proj['files']:
                                     f_c1, f_c2, f_c3 = st.columns([3, 2, 1])
                                     f_c1.write(f"מסמך: **{f['filename']}** (מאת: {f['uploaded_by']})")
-
                                     view_link = f"{API_URL}/files/{f['id']}/view"
                                     dl_link = f"{API_URL}/files/{f['id']}/download"
-                                    f_c2.markdown(
-                                        f'<a href="{view_link}" target="_blank" style="text-decoration:none; margin-left:15px; color: #0066cc;">צפייה</a>'
-                                        f'<a href="{dl_link}" target="_blank" style="text-decoration:none; color: #0066cc;">הורדה</a>',
-                                        unsafe_allow_html=True
-                                    )
-
+                                    f_c2.markdown(f'<a href="{view_link}" target="_blank" style="text-decoration:none; margin-left:15px; color: #0066cc;">צפייה</a><a href="{dl_link}" target="_blank" style="text-decoration:none; color: #0066cc;">הורדה</a>', unsafe_allow_html=True)
                                     if f['uploaded_by'] == current_user:
-                                        if f_c3.button("מחק", key=f"del_f_{f['id']}"):
-                                            requests.delete(f"{API_URL}/files/{f['id']}")
-                                            st.rerun()
+                                        if f_c3.button("מחק", key=f"del_f_{f['id']}"): requests.delete(f"{API_URL}/files/{f['id']}"); st.rerun()
                                     else:
-                                        f_c3.markdown("<span style='color:gray; font-size:14px;'>קריאה בלבד</span>",
-                                                      unsafe_allow_html=True)
+                                        f_c3.markdown("<span style='color:gray; font-size:14px;'>קריאה בלבד</span>", unsafe_allow_html=True)
                                     st.divider()
                             else:
                                 st.info("לא נמצאו מסמכים מצורפים.")
@@ -417,16 +330,11 @@ with main_tab_projects:
                                 uploaded_file = st.file_uploader("בחר קובץ", key=f"up_{proj['id']}")
                                 if st.form_submit_button("העלה לארכיון"):
                                     if uploaded_file:
-                                        files_payload = {"file": (uploaded_file.name, uploaded_file.getvalue())}
-                                        data_payload = {"uploaded_by": current_user}
-                                        requests.post(f"{API_URL}/projects/{proj['id']}/files/", files=files_payload,
-                                                      data=data_payload)
-                                        st.success("הקובץ הועלה בהצלחה.")
-                                        st.rerun()
+                                        requests.post(f"{API_URL}/projects/{proj['id']}/files/", files={"file": (uploaded_file.name, uploaded_file.getvalue())}, data={"uploaded_by": current_user})
+                                        st.success("הקובץ הועלה בהצלחה."); st.rerun()
 
                         if st.button("מחיקת פרויקט", key=f"del_proj_{proj['id']}"):
-                            requests.delete(f"{API_URL}/projects/{proj['id']}")
-                            st.rerun()
+                            requests.delete(f"{API_URL}/projects/{proj['id']}"); st.rerun()
     except:
         st.error("שגיאת התחברות לשרת.")
 
@@ -445,11 +353,5 @@ with main_tab_personal:
 
         if st.form_submit_button("הוסף ליומן"):
             if pt_title:
-                requests.post(f"{API_URL}/personal_tasks/", json={
-                    "title": pt_title,
-                    "assigned_to": current_user,
-                    "priority": pt_priority,
-                    "date": pt_date.strftime("%Y-%m-%d")
-                })
-                st.success("הרישום בוצע בהצלחה וסונכרן עם היומן.")
-                st.rerun()
+                requests.post(f"{API_URL}/personal_tasks/", json={"title": pt_title, "assigned_to": current_user, "priority": pt_priority, "date": pt_date.strftime("%Y-%m-%d")})
+                st.success("הרישום בוצע בהצלחה וסונכרן עם היומן."); st.rerun()
