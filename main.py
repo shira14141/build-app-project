@@ -11,8 +11,8 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship, Session
 # =========================================================
 # הגדרות מסד נתונים
 # =========================================================
-SQLALCHEMY_DATABASE_URL = "sqlite:///./construction.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+SQLALCHEMY_DATABASE_URL = "postgresql://neondb_owner:npg_ZTwEMhIWg57O@ep-curly-recipe-ahitwsj7-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

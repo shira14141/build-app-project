@@ -6,3 +6,4 @@ sqlalchemy
 python-multipart
 plotly
 pandas
+psycopg2-binary
