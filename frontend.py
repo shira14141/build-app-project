@@ -77,56 +77,28 @@ if st.sidebar.button("התנתק מהמערכת"):
     st.rerun()
 
 st.sidebar.divider()
-st.sidebar.markdown("<h4 style='color: #555;'>יומן פגישות יומי</h4>", unsafe_allow_html=True)
+st.sidebar.markdown("<h4 style='color: #555;'>📅 יומן פגישות</h4>", unsafe_allow_html=True)
 
-selected_date = st.sidebar.date_input("בחר תאריך להצגת לו\"ז:")
+# הלוח שנה כ"שלט רחוק"
+selected_date = st.sidebar.date_input("בחר תאריך להצגה במסך הראשי:")
 selected_date_str = selected_date.strftime("%Y-%m-%d")
 
-try:
-    res_personal = requests.get(f"{API_URL}/personal_tasks/{current_user}")
-    if res_personal.status_code == 200:
-        personal_tasks = res_personal.json()
-        daily_tasks = [pt for pt in personal_tasks if pt.get("date") == selected_date_str]
+# טופס מהיר להוספה מהצד
+with st.sidebar.expander(f"➕ הוסף פגישה ל-{selected_date.strftime('%d/%m/%Y')}"):
+    with st.form("quick_add_task_form"):
+        quick_title = st.text_input("שם הפגישה/משימה")
+        quick_priority = st.slider("דחיפות", 1, 5, 3, key="quick_slider")
+        if st.form_submit_button("שמור ביומן"):
+            if quick_title:
+                requests.post(f"{API_URL}/personal_tasks/", json={
+                    "title": quick_title,
+                    "assigned_to": current_user,
+                    "priority": quick_priority,
+                    "date": selected_date_str
+                })
+                st.rerun()
 
-        if not daily_tasks:
-            st.sidebar.info("אין משימות או פגישות לתאריך זה.")
-        else:
-            for pt in sorted(daily_tasks, key=lambda x: x['priority'], reverse=True):
-                urgency = "[דחוף]" if pt['priority'] >= 4 else "[רגיל]"
-                done = "[✓]" if pt['status'] == "בוצע" else ""
-
-                st.sidebar.markdown(f"**{done} {urgency} {pt['title']}**")
-
-                col1, col2 = st.sidebar.columns(2)
-                curr_idx = ["ממתין", "בתהליך", "בוצע"].index(pt['status'])
-                new_status = col1.selectbox("סטטוס", ["ממתין", "בתהליך", "בוצע"], index=curr_idx,
-                                            key=f"side_status_{pt['id']}", label_visibility="collapsed")
-
-                if new_status != pt['status']:
-                    requests.patch(f"{API_URL}/personal_tasks/{pt['id']}/status?new_status={new_status}")
-                    st.rerun()
-
-                if col2.button("מחק", key=f"side_del_{pt['id']}"):
-                    requests.delete(f"{API_URL}/personal_tasks/{pt['id']}")
-                    st.rerun()
-                st.sidebar.divider()
-
-        with st.sidebar.expander(f"הוסף פגישה ל-{selected_date.strftime('%d/%m/%Y')}"):
-            with st.form("quick_add_task_form"):
-                quick_title = st.text_input("שם הפגישה/משימה")
-                quick_priority = st.slider("דחיפות", 1, 5, 3, key="quick_slider")
-                if st.form_submit_button("שמור ביומן"):
-                    if quick_title:
-                        requests.post(f"{API_URL}/personal_tasks/", json={
-                            "title": quick_title,
-                            "assigned_to": current_user,
-                            "priority": quick_priority,
-                            "date": selected_date_str
-                        })
-                        st.rerun()
-except Exception as e:
-    st.sidebar.error("שגיאה בטעינת היומן.")
-
+st.sidebar.info("💡 המשימות עצמן מוצגות כעת בלשונית 'מרכז משימות אישי' במסך הראשי.")
 # =========================================================
 # המסך הראשי
 # =========================================================
