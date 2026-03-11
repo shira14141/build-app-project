@@ -192,10 +192,44 @@ def add_personal_task(task: dict, db: Session = Depends(get_db)):
     db.add(DBPersonalTask(id=str(uuid.uuid4()), title=task['title'], assigned_to=task['assigned_to'], priority=task['priority'], date=task['date'])); db.commit()
     return {"message": "Added"}
 
-@app.patch("/personal_tasks/{task_id}/status")
-def update_pt_status(task_id: str, new_status: str, db: Session = Depends(get_db)):
-    db.query(DBPersonalTask).filter(DBPersonalTask.id == task_id).first().status = new_status; db.commit()
+
+@app.patch("/projects/{project_id}/tasks/{task_id}/status")
+def update_task_status(project_id: int, task_id: str, new_status: str, db: Session = Depends(get_db)):
+    db.query(DBTask).filter(DBTask.id == task_id).first().status = new_status;
+    db.commit()
     return {"message": "Updated"}
+
+
+# 🔥 שדרוג 1: נתיב חדש לעדכון תקציב הפרויקט
+@app.patch("/projects/{project_id}/budget")
+def update_project_budget(project_id: int, request: dict, db: Session = Depends(get_db)):
+    project = db.query(DBProject).filter(DBProject.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    # עדכון התקציב למספר החדש שהגיע מהאתר
+    project.initial_budget = request.get("initial_budget")
+    db.commit()
+    return {"message": "Budget updated successfully"}
+
+
+# 🔥 שדרוג 2: נתיב חכם להוצאות (תומך גם בדקל וגם בטקסט חופשי)
+@app.post("/projects/{project_id}/expenses/")
+def add_expense(project_id: int, expense: dict, db: Session = Depends(get_db)):
+    # נבדוק אם הגיעה הוצאה חופשית (עם מפתח title) או מסעיף דקל (עם מפתח catalog_id)
+    if "title" in expense and "final_price" in expense:
+        # זה טקסט חופשי מהשדרוג החדש!
+        new_expense = DBExpense(project_id=project_id, catalog_id="חופשי", title=expense['title'],
+                                final_price=expense['final_price'])
+    else:
+        # זו הוצאה ישנה מסעיף דקל (תמיכה לאחור)
+        price = expense['custom_price'] if expense['custom_price'] is not None else \
+        dekel_catalog[expense['catalog_id']]["default_price"]
+        title = dekel_catalog[expense['catalog_id']]["title"]
+        new_expense = DBExpense(project_id=project_id, catalog_id=expense['catalog_id'], title=title, final_price=price)
+
+    db.add(new_expense)
+    db.commit()
+    return {"message": "Expense added successfully"}
 
 @app.delete("/personal_tasks/{task_id}")
 def delete_pt(task_id: str, db: Session = Depends(get_db)):
