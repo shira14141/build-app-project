@@ -289,26 +289,45 @@ with main_tab_projects:
                                 if st.form_submit_button("הוסף משימה"):
                                     if t_title: requests.post(f"{API_URL}/projects/{proj['id']}/tasks/", json={"title": t_title, "assigned_to": t_assignee, "priority": t_priority}); st.rerun()
 
-                        with tab_budget:
-                            total_expenses = sum(exp['final_price'] for exp in proj.get('expenses', []))
+                          with tab_budget:
+                            total_expenses = sum(exp.get('final_price', 0) for exp in proj.get('expenses', []))
                             remaining_budget = proj['initial_budget'] - total_expenses
+
                             m1, m2, m3 = st.columns(3)
                             m1.metric("תקציב בסיס", f"₪{proj['initial_budget']:,.0f}")
                             m2.metric("הוצאות בפועל", f"₪{total_expenses:,.0f}")
                             m3.metric("יתרה", f"₪{remaining_budget:,.0f}", delta=float(remaining_budget))
 
+                            # === שדרוג 1: עדכון תקציב הפרויקט ===
+                            with st.expander("✏️ עדכון תקציב הפרויקט"):
+                                with st.form(f"update_budget_{proj['id']}"):
+                                    new_budget = st.number_input("הזן תקציב מעודכן (₪)", value=float(proj['initial_budget']), step=1000.0)
+                                    if st.form_submit_button("שמור תקציב"):
+                                        # שולחים בקשת עדכון (PATCH) לשרת כדי לשנות את התקציב
+                                        requests.patch(f"{API_URL}/projects/{proj['id']}/budget", json={"initial_budget": new_budget})
+                                        st.rerun()
+
+                            st.divider()
+                            st.markdown("##### פירוט הוצאות")
                             if proj.get('expenses'):
                                 for exp in proj['expenses']:
-                                    st.write(f"• **{exp['title']}** - ₪{exp['final_price']:,.0f}")
+                                    st.write(f"• **{exp.get('title', 'הוצאה כללית')}** - ₪{exp.get('final_price', 0):,.0f}")
+                            else:
+                                st.info("טרם נרשמו הוצאות בפרויקט זה.")
 
+                            # === שדרוג 2: טופס הוצאה חופשית (במקום סעיפי דקל) ===
                             with st.form(f"add_exp_{proj['id']}"):
-                                cat_opts = {"101": "יציקת בטון", "102": "בניית קיר", "103": "נקודת חשמל"}
-                                e_cat = st.selectbox("סעיף דקל", list(cat_opts.keys()), format_func=lambda x: f"{x} - {cat_opts[x]}")
-                                e_price = st.number_input("מחיר מותאם (0 למקורי)", min_value=0.0, step=50.0)
-                                if st.form_submit_button("רישום הוצאה"):
-                                    requests.post(f"{API_URL}/projects/{proj['id']}/expenses/", json={"catalog_id": e_cat, "custom_price": e_price if e_price > 0 else None})
-                                    st.rerun()
+                                e_title = st.text_input("על מה ההוצאה? (למשל: תשלום לקבלן חפירות)")
+                                e_price = st.number_input("סכום ההוצאה (₪)", min_value=0.0, step=100.0)
 
+                                if st.form_submit_button("רישום הוצאה"):
+                                    if e_title and e_price > 0:
+                                        # שולחים לשרת את הטקסט החופשי והסכום
+                                        requests.post(f"{API_URL}/projects/{proj['id']}/expenses/",
+                                                      json={"title": e_title, "final_price": e_price})
+                                        st.rerun()
+                                    else:
+                                        st.warning("יש להזין תיאור וסכום גדול מ-0.")
                         with tab_files:
                             if proj.get('files'):
                                 for f in proj['files']:
