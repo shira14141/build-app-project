@@ -4,3 +4,5 @@ streamlit
 requests
 sqlalchemy
 python-multipart
+plotly
+pandas

@@ -1,5 +1,7 @@
 import streamlit as st
 import requests
+import plotly.express as px
+import pandas as pd
 from datetime import datetime
 
 API_URL = "https://build-app-project.onrender.com"
@@ -111,8 +113,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ... (המשך הקוד שלך מ-AVAILABLE_PARTNERS ואילך)
-
 # =========================================================
 # תפריט הצד (Sidebar) - לוח השנה והיומן
 # =========================================================
@@ -215,19 +215,57 @@ with main_tab_dashboard:
                         if t['status'] in task_counts:
                             task_counts[t['status']] += 1
 
-                g_col1, g_col2 = st.columns(2)
-                with g_col1:
-                    st.markdown("<h5 style='color: #555;'>התפלגות סטטוס משימות</h5>", unsafe_allow_html=True)
-                    st.bar_chart(task_counts, color="#FF4B4B")
-                with g_col2:
-                    st.markdown("<h5 style='color: #555;'>תקציב מול הוצאות לפי פרויקט</h5>", unsafe_allow_html=True)
-                    financial_data = {}
-                    for p in projects:
-                        p_exp = sum(e['final_price'] for e in p.get('expenses', []))
-                        financial_data[p['name']] = {"תקציב": p['initial_budget'], "הוצאות": p_exp}
-                    if financial_data:
-                        st.bar_chart(financial_data)
+                            # ==========================================
+                            # אזור הגרפים המשודרגים (Plotly)
+                            # ==========================================
+                            # ==========================================
+                            # אזור הגרפים המשודרגים (Plotly)
+                            # ==========================================
+                            g_col1, g_col2 = st.columns(2)
 
+                            with g_col1:
+                                st.markdown("<h5 style='color: #262730; text-align: center;'>התפלגות סטטוס משימות</h5>",
+                                            unsafe_allow_html=True)
+                                if sum(task_counts.values()) > 0:
+                                    df_tasks = pd.DataFrame(list(task_counts.items()), columns=['סטטוס', 'כמות'])
+                                    fig1 = px.pie(df_tasks, values='כמות', names='סטטוס', hole=0.65,
+                                                  color_discrete_sequence=['#CBD5E1', '#94A3B8', '#1E3A8A'])
+                                    fig1.update_traces(textposition='inside', textinfo='percent+label',
+                                                       hoverinfo='label+percent+name')
+                                    fig1.update_layout(margin=dict(t=20, b=20, l=20, r=20), showlegend=False,
+                                                       paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                                    st.plotly_chart(fig1, use_container_width=True)
+                                else:
+                                    st.info("אין נתונים עדיין")
+
+                            with g_col2:
+                                st.markdown(
+                                    "<h5 style='color: #262730; text-align: center;'>תקציב מול הוצאות לפי פרויקט</h5>",
+                                    unsafe_allow_html=True)
+
+                                # ---> הנה השורות שהיו חסרות! חישוב הנתונים מתוך הפרויקטים <---
+                                financial_data = {}
+                                for p in projects:
+                                    p_exp = sum(e['final_price'] for e in p.get('expenses', []))
+                                    financial_data[p['name']] = {"תקציב": p['initial_budget'], "הוצאות": p_exp}
+
+                                if financial_data:
+                                    # יצירת גרף עמודות כפול ונקי
+                                    df_fin_list = []
+                                    for name, data in financial_data.items():
+                                        df_fin_list.append({"פרויקט": name, "סוג": "תקציב", "סכום": data["תקציב"]})
+                                        df_fin_list.append({"פרויקט": name, "סוג": "הוצאות", "סכום": data["הוצאות"]})
+
+                                    df_fin = pd.DataFrame(df_fin_list)
+                                    fig2 = px.bar(df_fin, x='פרויקט', y='סכום', color='סוג', barmode='group',
+                                                  color_discrete_map={"תקציב": "#CBD5E1", "הוצאות": "#1E3A8A"})
+                                    fig2.update_layout(margin=dict(t=20, b=20, l=0, r=0),
+                                                       legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                                                                   xanchor="center", x=0.5),
+                                                       paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                                    st.plotly_chart(fig2, use_container_width=True)
+                                else:
+                                    st.info("אין נתונים פיננסיים עדיין")
                 st.divider()
                 st.markdown("<h4 style='color: #262730;'>מנוע תובנות וניהול סיכונים</h4>", unsafe_allow_html=True)
                 insights, task_load = [], {}
