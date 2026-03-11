@@ -385,21 +385,73 @@ with main_tab_projects:
 # לשונית 3: מרכז המשימות האישיות
 # ---------------------------------------------------------
 with main_tab_personal:
-    st.markdown(
-        "<p style='color: #555;'>הפגישות שיתווספו כאן יסונכרנו אוטומטית עם לוח השנה האישי שלך בתפריט הצידי.</p>",
-        unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #262730;'>מרכז המשימות שלי</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #555;'>הוסף משימות, והן יופיעו למטה מסודרות אוטומטית לפי הדחיפות שלהן.</p>",
+                unsafe_allow_html=True)
 
+    # טופס ההוספה
     with st.form("new_personal_task_form_main"):
-        st.write("**רישום משימה/פגישה ליומן:**")
         c1, c2, c3 = st.columns([2, 1, 1])
-        pt_title = c1.text_input("נושא")
-        pt_date = c2.date_input("תאריך")
-        pt_priority = c3.slider("רמת דחיפות", 1, 5, 3, key="main_slider")
+        pt_title = c1.text_input("מה המשימה?")
+        pt_date = c2.date_input("תאריך לביצוע")
+        pt_priority = c3.slider("דחיפות (5 = הכי דחוף)", 1, 5, 3, key="main_slider")
 
-        if st.form_submit_button("הוסף ליומן"):
+        if st.form_submit_button("➕ הוסף משימה"):
             if pt_title:
                 requests.post(f"{API_URL}/personal_tasks/",
                               json={"title": pt_title, "assigned_to": current_user, "priority": pt_priority,
                                     "date": pt_date.strftime("%Y-%m-%d")})
-                st.success("הרישום בוצע בהצלחה וסונכרן עם היומן.");
                 st.rerun()
+
+    st.divider()
+
+    # הצגת המשימות מתחת לטופס
+    st.markdown("<h4 style='color: #262730;'>📌 המשימות הפתוחות שלי</h4>", unsafe_allow_html=True)
+
+    try:
+        # מושכים את כל המשימות של המשתמש המחובר מהשרת
+        res_pt = requests.get(f"{API_URL}/personal_tasks/{current_user}")
+        if res_pt.status_code == 200:
+            p_tasks = res_pt.json()
+
+            # מסננים רק את המשימות שלא בוצעו, וממיינים מהדחוף (5) לפחות דחוף (1)
+            open_tasks = [t for t in p_tasks if t['status'] != 'בוצע']
+            open_tasks.sort(key=lambda x: x['priority'], reverse=True)
+
+            if not open_tasks:
+                st.info("אין לך משימות פתוחות. איזה כיף!")
+            else:
+                for t in open_tasks:
+                    # יצירת מראה של "שורה" מסודרת לכל משימה
+                    tc1, tc2, tc3, tc4 = st.columns([4, 2, 2, 1])
+
+                    urgency_stars = "🔥" * t['priority']
+                    tc1.write(f"**{t['title']}** <span style='font-size: 12px;'>{urgency_stars}</span>",
+                              unsafe_allow_html=True)
+                    tc2.write(f"📅 {t['date']}")
+
+                    new_status = tc3.selectbox("סטטוס", ["ממתין", "בתהליך", "בוצע"],
+                                               index=["ממתין", "בתהליך", "בוצע"].index(t['status']),
+                                               key=f"main_pt_status_{t['id']}", label_visibility="collapsed")
+
+                    if new_status != t['status']:
+                        requests.patch(f"{API_URL}/personal_tasks/{t['id']}/status?new_status={new_status}")
+                        st.rerun()
+
+                    if tc4.button("מחק", key=f"main_pt_del_{t['id']}"):
+                        requests.delete(f"{API_URL}/personal_tasks/{t['id']}")
+                        st.rerun()
+
+                    st.markdown("<hr style='margin: 0.5em 0; border: 0.5px solid #E2E8F0;'>", unsafe_allow_html=True)
+
+            # אזור נפרד למשימות שכבר בוצעו
+            done_tasks = [t for t in p_tasks if t['status'] == 'בוצע']
+            if done_tasks:
+                with st.expander("✅ הצג היסטוריית משימות שהושלמו"):
+                    for t in done_tasks:
+                        st.markdown(
+                            f"<span style='text-decoration: line-through; color: #94A3B8;'>{t['title']} (הושלם ב-{t['date']})</span>",
+                            unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error("שגיאה בטעינת המשימות האישיות.")
