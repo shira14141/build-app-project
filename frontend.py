@@ -60,7 +60,7 @@ if not st.session_state["logged_in"]:
                         st.rerun()
                     else:
                         st.error("סיסמה שגויה. (הסיסמה של שירה היא admin, ושל השאר 1234)")
-                except:
+                except Exception as e:
                     st.error("שגיאת התחברות לשרת הנתונים. ודאי ש-main.py פועל.")
     st.stop()
 
@@ -258,7 +258,7 @@ with main_tab_projects:
                                         json={"id": p_id, "name": p_name, "initial_budget": p_budget,
                                               "partners": p_partners, "tasks": [], "expenses": []})
                     if res.status_code == 200: st.success("נוצר בהצלחה!"); st.rerun()
-                except:
+                except Exception as e:
                     st.error("שגיאת התחברות לשרת.")
 
     st.divider()
@@ -378,7 +378,7 @@ with main_tab_projects:
                         if st.button("מחיקת פרויקט", key=f"del_proj_{proj['id']}"):
                             requests.delete(f"{API_URL}/projects/{proj['id']}");
                             st.rerun()
-    except:
+    except Exception as e:
         st.error("שגיאת התחברות לשרת.")
 
 # ---------------------------------------------------------
