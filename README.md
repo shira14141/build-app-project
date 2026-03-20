@@ -4,6 +4,10 @@ A full-stack, end-to-end web application designed to optimize project management
 
 ## 🚀 Live Demo
 [Click here to view the live application](https://build-app-project-jfgr28nh4qecpww7krlkgq.streamlit.app/#build-app\docs)
+**🔑 Demo Access:**
+To explore the system's features and Role-Based Access Control (RBAC), please use the following test credentials:
+* **Username:** יוסי הקבלן
+* **Password:** 1234
 
 ## ✨ Key Features
 * **Real-Time Budget Tracking:** Integrated management of project expenses, incorporating data logic based on the Dekel pricing catalog.
@@ -30,7 +34,7 @@ Follow these steps to run the application locally on your machine:
 1. Clone the repository:
    ```bash
    git clone [https://github.com/shira14141/build-app-project.git](https://github.com/shira14141/build-app-project.git)
+   cd build-app-project
+   pip install -r requirements.tx
+   streamlit run app.py
 
-  2.cd build-app-project
-  3.pip install -r requirements.txt
-  4.streamlit run app.py
