@@ -16,6 +16,8 @@ A full-stack, end-to-end web application designed to optimize project management
 * **Frontend & Backend Logic:** Streamlit
 * **Deployment:** Render / Streamlit Cloud
 * **Version Control:** Git & GitHub
+ <img width="1896" height="986" alt="image" src="https://github.com/user-attachments/assets/aa416081-a6da-4eba-8508-50af03bd2f46" />
+   <img width="1827" height="1048" alt="image" src="https://github.com/user-attachments/assets/7fd625df-e35f-4c40-8183-f78b8dda9aa8" />
 
 ## 💻 Local Installation (How to Run)
 Follow these steps to run the application locally on your machine:
@@ -24,6 +26,4 @@ Follow these steps to run the application locally on your machine:
    ```bash
    git clone [https://github.com/shira14141/build-app-project.git](https://github.com/shira14141/build-app-project.git)
 
-   <img width="1896" height="986" alt="image" src="https://github.com/user-attachments/assets/aa416081-a6da-4eba-8508-50af03bd2f46" />
-   <img width="1827" height="1048" alt="image" src="https://github.com/user-attachments/assets/7fd625df-e35f-4c40-8183-f78b8dda9aa8" />
-
+  
