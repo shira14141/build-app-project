@@ -26,4 +26,6 @@ Follow these steps to run the application locally on your machine:
    ```bash
    git clone [https://github.com/shira14141/build-app-project.git](https://github.com/shira14141/build-app-project.git)
 
-  
+  2.cd build-app-project
+  3.pip install -r requirements.txt
+  4.streamlit run app.py
