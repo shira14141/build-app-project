@@ -16,10 +16,10 @@ A full-stack, end-to-end web application designed to optimize project management
 * **Frontend & Backend Logic:** Streamlit
 * **Deployment:** Render / Streamlit Cloud
 * **Version Control:** Git & GitHub
-<img width="1902" height="101" alt="image" src="https://github.com/user-attachments/assets/22c506e8-c280-4e33-adac-0646ef15fe8e" />
+<img width="1902" height="1013" alt="image" src="https://github.com/user-attachments/assets/22c506e8-c280-4e33-adac-0646ef15fe8e" />
 
-<img width="1860" height="100" alt="image" src="https://github.com/user-attachments/assets/066ec4a3-a408-404c-8775-82194d2dca48" />
-<img width="1507" height="86" alt="image" src="https://github.com/user-attachments/assets/74128181-d0b8-46c3-9708-55f0bb4e5937" />
+<img width="1860" height="1003" alt="image" src="https://github.com/user-attachments/assets/066ec4a3-a408-404c-8775-82194d2dca48" />
+<img width="1507" height="863" alt="image" src="https://github.com/user-attachments/assets/74128181-d0b8-46c3-9708-55f0bb4e5937" />
 
 
 
