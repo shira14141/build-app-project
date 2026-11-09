@@ -1,436 +1,126 @@
+"""נקודת הכניסה של הממשק: התחברות, תפריט צד (יומן יומי) וניווט בין הדפים.
+
+הרצה:  streamlit run frontend.py
+הדפים עצמם נמצאים בתיקייה views/.
+"""
+from datetime import date
+
 import streamlit as st
-import requests
-import plotly.express as px
-import pandas as pd
-from datetime import datetime
 
-API_URL = "https://build-app-project.onrender.com"
+import api
+import ui
+from constants import PERM_MANAGE_USERS, PERM_VIEW_DASHBOARD, ROLE_LABELS
 
-# הגדרת דף בודדת ויחידה
-st.set_page_config(page_title="מערכת ניהול בנייה", layout="wide")
+st.set_page_config(page_title="מערכת ניהול בנייה", page_icon="🏗️", layout="wide")
+ui.inject_css()
 
-# =========================================================
-# הזרקת CSS למראה מקצועי ו"בוגר"
-# =========================================================
-st.markdown("""
-<style>
-    .stApp { background-color: #F8FAFC; }
-    [data-testid="stSidebar"] { background-color: #262730 !important; color: white; }
-    [data-testid="stSidebar"] * { color: white !important; }
-    [data-testid="stSidebar"] .stButton > button { background-color: #CBD5E1; color: #262730 !important; border: none; border-radius: 8px; }
-    div[data-testid="metric-container"] { background-color: #E2E8F0; border-radius: 15px; padding: 20px; box-shadow: 0px 4px 10px rgba(0,0,0,0.05); border: 1px solid #CBD5E1; }
-    .stMarkdown h1 { color: #262730; }
-    .stTabs [data-baseweb="tab-list"] { background-color: transparent; border-bottom: 2px solid #CBD5E1; }
-    .stTabs [data-baseweb="tab"] { background-color: transparent; border-radius: 10px 10px 0 0; margin-right: 5px; color: #262730 !important; }
-    .stTabs [data-baseweb="tab"]:hover { background-color: #E2E8F0; }
-</style>
-""", unsafe_allow_html=True)
-
-AVAILABLE_PARTNERS = [
-    "יוסי הקבלן", "דנה האדריכלית", "משה מפקח הבנייה",
-    "אבי אינסטלטור", "שירה", "רוני קבלן חשמל"
-]
 
 # =========================================================
-# מערכת התחברות (Login)
+# התחברות והחלפת סיסמה
 # =========================================================
-if "logged_in" not in st.session_state:
-    st.session_state["logged_in"] = False
-    st.session_state["current_user"] = ""
-
-if not st.session_state["logged_in"]:
-    st.markdown("<h2 style='text-align: center; color: #262730;'>התחברות למערכת</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #555;'>אנא הזן שם משתמש וסיסמה כדי לגשת לסביבת העבודה.</p>",
-                unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        with st.form("login_form"):
-            username = st.selectbox("שם משתמש", options=AVAILABLE_PARTNERS)
-            password = st.text_input("סיסמה", type="password")
-            submit = st.form_submit_button("התחבר")
-
-            if submit:
-                try:
-                    res = requests.post(f"{API_URL}/login/", json={"username": username, "password": password})
-                    if res.status_code == 200:
-                        st.session_state["logged_in"] = True
-                        st.session_state["current_user"] = username
-                        st.success("התחברת בהצלחה! מעביר אותך למערכת...")
-                        st.rerun()
-                    else:
-                        st.error("סיסמה שגויה. (הסיסמה של שירה היא admin, ושל השאר 1234)")
-                except Exception as e:
-                    st.error("שגיאת התחברות לשרת הנתונים. ודאי ש-main.py פועל.")
-    st.stop()
-
-# =========================================================
-# תפריט הצד (Sidebar)
-# =========================================================
-current_user = st.session_state["current_user"]
-
-st.sidebar.markdown("<h3 style='color: #262730;'>אזור אישי</h3>", unsafe_allow_html=True)
-st.sidebar.write(f"שלום, **{current_user}**")
-if st.sidebar.button("התנתק מהמערכת"):
-    st.session_state["logged_in"] = False
-    st.session_state["current_user"] = ""
-    st.rerun()
-
-st.sidebar.divider()
-st.sidebar.markdown("<h4 style='color: #555;'>📅 יומן פגישות</h4>", unsafe_allow_html=True)
-
-# הלוח שנה כ"שלט רחוק"
-selected_date = st.sidebar.date_input("בחר תאריך להצגה במסך הראשי:")
-selected_date_str = selected_date.strftime("%Y-%m-%d")
-
-# טופס מהיר להוספה מהצד
-with st.sidebar.expander(f"➕ הוסף פגישה ל-{selected_date.strftime('%d/%m/%Y')}"):
-    with st.form("quick_add_task_form"):
-        quick_title = st.text_input("שם הפגישה/משימה")
-        quick_priority = st.slider("דחיפות", 1, 5, 3, key="quick_slider")
-        if st.form_submit_button("שמור ביומן"):
-            if quick_title:
-                requests.post(f"{API_URL}/personal_tasks/", json={
-                    "title": quick_title,
-                    "assigned_to": current_user,
-                    "priority": quick_priority,
-                    "date": selected_date_str
-                })
+def login_page():
+    st.title("🔐 התחברות למערכת")
+    ui.show_flash()
+    with st.form("login_form"):
+        username = st.text_input("שם משתמש")
+        password = st.text_input("סיסמה", type="password")
+        if st.form_submit_button("התחבר", type="primary"):
+            try:
+                ui.start_session(api.login(username.strip(), password))
+            except api.ApiError as e:
+                st.error("שם משתמש או סיסמה שגויים." if e.status_code == 401 else str(e))
+            else:
                 st.rerun()
 
-st.sidebar.info("💡 המשימות עצמן מוצגות כעת בלשונית 'מרכז משימות אישי' במסך הראשי.")
+
+def first_password_page():
+    st.title("🔑 החלפת סיסמה")
+    st.info(f"שלום **{ui.current_user()}**! זו הכניסה הראשונה שלך (או שהסיסמה אופסה). "
+            "יש לבחור סיסמה אישית לפני שממשיכים.")
+    ui.show_flash()
+    ui.change_password_form("first_password_form")
+    st.button("התנתק", on_click=ui.end_session)
+
+
+PAGE_PATHS = ["home", "dashboard", "projects", "work-log", "calendar", "users"]
+
+
+def gate(page_fn, title, icon):
+    """לפני כניסה מלאה: כל כתובת של האפליקציה מציגה את מסך ההתחברות/החלפת הסיסמה, והכתובת
+    (כולל ?id=) נשמרת - כך שקישור ישיר לפרויקט מוביל אליו מיד אחרי ההתחברות."""
+    gate_pages = [st.Page(page_fn, title=title, icon=icon, default=True)]
+    gate_pages += [st.Page(page_fn, title=title, icon=icon, url_path=path) for path in PAGE_PATHS]
+    st.navigation(gate_pages, position="hidden").run()
+    st.stop()
+
+
+if not ui.is_logged_in():
+    gate(login_page, "התחברות", "🔐")
+if st.session_state.get("must_change_password"):
+    gate(first_password_page, "החלפת סיסמה", "🔑")
+
 # =========================================================
-# המסך הראשי
+# ניווט
 # =========================================================
-st.markdown("<h1 style='color: #262730; padding-bottom: 20px;'>Build App</h1>", unsafe_allow_html=True)
-main_tab_dashboard, main_tab_projects, main_tab_personal = st.tabs([
-    "לוח בקרה ניהולי",
-    "ניהול פרויקטים",
-    "מרכז משימות אישי"
-])
+home_page = st.Page("views/home.py", title="היום", icon="🏠", url_path="home", default=True)
+calendar_page = st.Page("views/calendar.py", title="הפגישות שלי", icon="📅", url_path="calendar")
+pages = [
+    home_page,
+    st.Page("views/projects.py", title="פרויקטים", icon="🏗️", url_path="projects"),
+    st.Page("views/work_log.py", title="יומן עבודה", icon="📝", url_path="work-log"),
+    calendar_page,
+]
+if ui.can(PERM_VIEW_DASHBOARD):
+    pages.append(st.Page("views/dashboard.py", title="הנהלה", icon="📊", url_path="dashboard"))
+if ui.can(PERM_MANAGE_USERS):
+    pages.append(st.Page("views/users.py", title="משתמשים", icon="👥", url_path="users"))
+# בטלפון Streamlit מכווץ את הניווט העליון לתפריט אוטומטית
+page = st.navigation(pages, position="top")
 
-# ---------------------------------------------------------
-# לשונית 1: לוח בקרה
-# ---------------------------------------------------------
-with main_tab_dashboard:
-    st.markdown("<h3 style='color: #262730;'>סקירת ביצועים - כל הפרויקטים</h3>", unsafe_allow_html=True)
-    try:
-        response = requests.get(f"{API_URL}/projects/")
-        if response.status_code == 200:
-            projects = response.json()
-            if not projects:
-                st.info("אין מספיק נתונים להצגת לוח בקרה. צור פרויקטים חדשים!")
-            else:
-                total_budget = sum(p['initial_budget'] for p in projects)
-                total_expenses = sum(sum(exp.get('final_price', 0) for exp in p.get('expenses', [])) for p in projects)
-                total_remaining = total_budget - total_expenses
 
-                c1, c2, c3 = st.columns(3)
-                c1.metric("סה\"כ תקציבים במערכת", f"₪{total_budget:,.0f}")
-                c2.metric("סה\"כ הוצאות עד כה", f"₪{total_expenses:,.0f}")
-                c3.metric("יתרה כוללת נותרת", f"₪{total_remaining:,.0f}", delta=float(total_remaining))
+# =========================================================
+# תפריט הצד - יומן יומי
+# =========================================================
+def daily_calendar():
+    ui.show_flash()  # הודעות מפעולות בתוך היומן (כשרק הוא מתרענן)
+    st.subheader("📅 יומן פגישות יומי")
+    selected_date = st.date_input("בחר תאריך להצגת לו\"ז:", value=date.today(), key="sidebar_date")
+    selected_str = selected_date.strftime("%Y-%m-%d")
 
-                st.divider()
+    tasks, error = ui.load(api.get_personal_tasks)
+    if error:
+        st.error(f"שגיאה בטעינת היומן: {error}")
+        return
 
-                task_counts = {"ממתין": 0, "בתהליך": 0, "בוצע": 0}
-                for p in projects:
-                    for t in p.get('tasks', []):
-                        if t['status'] in task_counts:
-                            task_counts[t['status']] += 1
+    daily = sorted((t for t in tasks if t.get("date") == selected_str), key=lambda t: t["priority"], reverse=True)
+    if not daily:
+        st.info("אין משימות או פגישות לתאריך זה.")
+    for pt in daily:
+        ui.personal_task_row(pt, "side")
 
-                g_col1, g_col2 = st.columns(2)
+    with st.expander(f"➕ הוסף פגישה ל-{selected_date.strftime('%d/%m/%Y')}"):
+        ui.personal_task_form("quick_add_task_form", fixed_date=selected_date)
 
-                with g_col1:
-                    st.markdown("<h5 style='color: #262730; text-align: center;'>התפלגות סטטוס משימות</h5>",
-                                unsafe_allow_html=True)
-                    if sum(task_counts.values()) > 0:
-                        df_tasks = pd.DataFrame(list(task_counts.items()), columns=['סטטוס', 'כמות'])
-                        fig1 = px.pie(df_tasks, values='כמות', names='סטטוס', hole=0.65,
-                                      color_discrete_sequence=['#CBD5E1', '#94A3B8', '#1E3A8A'])
-                        fig1.update_traces(textposition='inside', textinfo='percent+label',
-                                           hoverinfo='label+percent+name')
-                        fig1.update_layout(margin=dict(t=20, b=20, l=20, r=20), showlegend=False,
-                                           paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                        st.plotly_chart(fig1, use_container_width=True)
-                    else:
-                        st.info("אין נתונים עדיין")
 
-                with g_col2:
-                    st.markdown("<h5 style='color: #262730; text-align: center;'>תקציב מול הוצאות לפי פרויקט</h5>",
-                                unsafe_allow_html=True)
+ui.show_flash()  # לפני היומן בצד, כדי שהודעות של הדף הראשי יוצגו בדף ולא בתפריט
 
-                    financial_data = {}
-                    for p in projects:
-                        p_exp = sum(e.get('final_price', 0) for e in p.get('expenses', []))
-                        financial_data[p['name']] = {"תקציב": p['initial_budget'], "הוצאות": p_exp}
-
-                    if financial_data:
-                        df_fin_list = []
-                        for name, data in financial_data.items():
-                            df_fin_list.append({"פרויקט": name, "סוג": "תקציב", "סכום": data["תקציב"]})
-                            df_fin_list.append({"פרויקט": name, "סוג": "הוצאות", "סכום": data["הוצאות"]})
-
-                        df_fin = pd.DataFrame(df_fin_list)
-                        fig2 = px.bar(df_fin, x='פרויקט', y='סכום', color='סוג', barmode='group',
-                                      color_discrete_map={"תקציב": "#CBD5E1", "הוצאות": "#1E3A8A"})
-                        fig2.update_layout(margin=dict(t=20, b=20, l=0, r=0),
-                                           legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center",
-                                                       x=0.5),
-                                           paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                        st.plotly_chart(fig2, use_container_width=True)
-                    else:
-                        st.info("אין נתונים פיננסיים עדיין")
-
-                st.divider()
-                st.markdown("<h4 style='color: #262730;'>מנוע תובנות וניהול סיכונים</h4>", unsafe_allow_html=True)
-                insights, task_load = [], {}
-                for p in projects:
-                    p_budget = p['initial_budget']
-                    p_exp = sum(e.get('final_price', 0) for e in p.get('expenses', []))
-                    if p_budget > 0:
-                        spent_pct = (p_exp / p_budget) * 100
-                        tasks = p.get('tasks', [])
-                        done_pct = (len([t for t in tasks if t['status'] == 'בוצע']) / len(
-                            tasks) * 100) if tasks else 100
-                        if spent_pct > 80 and done_pct < 50:
-                            insights.append(
-                                f"סיכון גבוה '{p['name']}': נוצלו {spent_pct:.0f}% מהתקציב, אבל רק {done_pct:.0f}% מהמשימות הושלמו.")
-                        elif spent_pct > 90:
-                            insights.append(f"חריגת תקציב קרובה '{p['name']}': נוצלו {spent_pct:.0f}% מהתקציב ההתחלתי.")
-                    for t in p.get('tasks', []):
-                        if t['status'] != 'בוצע': task_load[t['assigned_to']] = task_load.get(t['assigned_to'], 0) + 1
-
-                if insights:
-                    for insight in insights: st.warning(insight)
-                else:
-                    st.success("ניתוח נתונים: כל הפרויקטים מאוזנים ואין חריגות תקציב.")
-                if task_load:
-                    busiest_worker = max(task_load, key=task_load.get)
-                    st.info(
-                        f"ניהול משאבים: שים לב, {busiest_worker} עמוס כרגע ({task_load[busiest_worker]} משימות פתוחות).")
-    except Exception as e:
-        st.error("לא ניתן לטעון את נתוני לוח הבקרה.")
-
-# ---------------------------------------------------------
-# לשונית 2: ניהול פרויקטים
-# ---------------------------------------------------------
-with main_tab_projects:
-    with st.expander("יצירת פרויקט חדש"):
-        with st.form("new_project_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                p_id = st.number_input("מזהה פרויקט (ID)", min_value=1, step=1)
-                p_name = st.text_input("שם הפרויקט")
-            with col2:
-                p_budget = st.number_input("תקציב ראשוני", min_value=0.0, step=1000.0)
-                p_partners = st.multiselect("בחר שותפי עבודה", options=AVAILABLE_PARTNERS)
-            if st.form_submit_button("צור פרויקט"):
-                try:
-                    res = requests.post(f"{API_URL}/projects/",
-                                        json={"id": p_id, "name": p_name, "initial_budget": p_budget,
-                                              "partners": p_partners, "tasks": [], "expenses": []})
-                    if res.status_code == 200: st.success("נוצר בהצלחה!"); st.rerun()
-                except Exception as e:
-                    st.error("שגיאת התחברות לשרת.")
-
+with st.sidebar:
+    st.title("👤 אזור אישי")
+    st.success(f"שלום, **{ui.current_user()}**!")
+    st.caption(f"תפקיד: {ROLE_LABELS.get(st.session_state.get('role'), '')}")
+    c1, c2 = st.columns(2)
+    with c1.popover("🔑 סיסמה"):
+        ui.change_password_form("sidebar_password_form")
+    c2.button("🚪 התנתק", on_click=ui.end_session)
     st.divider()
-    st.markdown("<h3 style='color: #262730;'>הפרויקטים הפעילים</h3>", unsafe_allow_html=True)
-    try:
-        response = requests.get(f"{API_URL}/projects/")
-        if response.status_code == 200:
-            projects = response.json()
-            if not projects:
-                st.info("אין פרויקטים פעילים במערכת.")
-            else:
-                for proj in projects:
-                    with st.expander(f"{proj['name']} (מזהה: {proj['id']})"):
-                        tab_tasks, tab_budget, tab_files = st.tabs(["משימות הפרויקט", "תקציב הפרויקט", "קבצי הפרויקט"])
+    if page.url_path == home_page.url_path:
+        # במסך 'היום' הפגישות של היום כבר מוצגות במסך עצמו (וגם בטלפון, שבו תפריט הצד מוסתר)
+        st.caption("הפגישות של היום מוצגות במסך הראשי.")
+    elif page.url_path == calendar_page.url_path:
+        # בדף היומן - רענון מלא, כדי שהרשימה בדף והיומן בצד יישארו מסונכרנים
+        daily_calendar()
+    else:
+        # בשאר הדפים - fragment: בחירת תאריך או שינוי סטטוס מרעננים רק את היומן ולא את כל הדף
+        st.fragment(daily_calendar)()
 
-                        with tab_tasks:
-                            if proj['tasks']:
-                                for task in sorted(proj['tasks'], key=lambda x: x['priority'], reverse=True):
-                                    t_c1, t_c2, t_c3 = st.columns([4, 2, 1])
-                                    task_urgency = "[דחוף]" if task['priority'] >= 4 else "[רגיל]"
-                                    task_done = "[✓]" if task['status'] == 'בוצע' else ""
-                                    t_c1.write(
-                                        f"{task_done} {task_urgency} **{task['title']}** (אחראי: {task['assigned_to']})")
-                                    new_status = t_c2.selectbox("סטטוס", ["ממתין", "בתהליך", "בוצע"],
-                                                                index=["ממתין", "בתהליך", "בוצע"].index(task['status']),
-                                                                key=f"p_{proj['id']}_t_{task['id']}",
-                                                                label_visibility="collapsed")
-                                    if new_status != task['status']: requests.patch(
-                                        f"{API_URL}/projects/{proj['id']}/tasks/{task['id']}/status?new_status={new_status}"); st.rerun()
-                                    if t_c3.button("מחק", key=f"del_p_{proj['id']}_t_{task['id']}"): requests.delete(
-                                        f"{API_URL}/projects/{proj['id']}/tasks/{task['id']}"); st.rerun()
-                                    st.divider()
-                            with st.form(f"add_task_{proj['id']}"):
-                                c1, c2, c3 = st.columns(3)
-                                t_title = c1.text_input("תיאור המשימה")
-                                t_assignee = c2.selectbox("שיוך לצוות",
-                                                          options=proj['partners'] if proj['partners'] else [
-                                                              "ללא שיוך"])
-                                t_priority = c3.slider("דחיפות", 1, 5, 3)
-                                if st.form_submit_button("הוסף משימה"):
-                                    if t_title: requests.post(f"{API_URL}/projects/{proj['id']}/tasks/",
-                                                              json={"title": t_title, "assigned_to": t_assignee,
-                                                                    "priority": t_priority}); st.rerun()
-
-                        with tab_budget:
-                            total_expenses = sum(exp.get('final_price', 0) for exp in proj.get('expenses', []))
-                            remaining_budget = proj['initial_budget'] - total_expenses
-
-                            m1, m2, m3 = st.columns(3)
-                            m1.metric("תקציב בסיס", f"₪{proj['initial_budget']:,.0f}")
-                            m2.metric("הוצאות בפועל", f"₪{total_expenses:,.0f}")
-                            m3.metric("יתרה", f"₪{remaining_budget:,.0f}", delta=float(remaining_budget))
-
-                            # === שדרוג 1: עדכון תקציב הפרויקט ===
-                            with st.expander("✏️ עדכון תקציב הפרויקט"):
-                                with st.form(f"update_budget_{proj['id']}"):
-                                    new_budget = st.number_input("הזן תקציב מעודכן (₪)",
-                                                                 value=float(proj['initial_budget']), step=1000.0)
-                                    if st.form_submit_button("שמור תקציב"):
-                                        requests.patch(f"{API_URL}/projects/{proj['id']}/budget",
-                                                       json={"initial_budget": new_budget})
-                                        st.rerun()
-
-                            st.divider()
-                            st.markdown("##### פירוט הוצאות")
-                            if proj.get('expenses'):
-                                for exp in proj['expenses']:
-                                    st.write(
-                                        f"• **{exp.get('title', 'הוצאה כללית')}** - ₪{exp.get('final_price', 0):,.0f}")
-                            else:
-                                st.info("טרם נרשמו הוצאות בפרויקט זה.")
-
-                            # === שדרוג 2: טופס הוצאה חופשית ===
-                            with st.form(f"add_exp_{proj['id']}"):
-                                e_title = st.text_input("על מה ההוצאה? (למשל: תשלום לקבלן חפירות)")
-                                e_price = st.number_input("סכום ההוצאה (₪)", min_value=0.0, step=100.0)
-
-                                if st.form_submit_button("רישום הוצאה"):
-                                    if e_title and e_price > 0:
-                                        requests.post(f"{API_URL}/projects/{proj['id']}/expenses/",
-                                                      json={"title": e_title, "final_price": e_price})
-                                        st.rerun()
-                                    else:
-                                        st.warning("יש להזין תיאור וסכום גדול מ-0.")
-
-                        with tab_files:
-                            if proj.get('files'):
-                                for f in proj['files']:
-                                    f_c1, f_c2, f_c3 = st.columns([3, 2, 1])
-                                    f_c1.write(f"מסמך: **{f['filename']}** (מאת: {f['uploaded_by']})")
-                                    view_link = f"{API_URL}/files/{f['id']}/view"
-                                    dl_link = f"{API_URL}/files/{f['id']}/download"
-                                    f_c2.markdown(
-                                        f'<a href="{view_link}" target="_blank" style="text-decoration:none; margin-left:15px; color: #0066cc;">צפייה</a><a href="{dl_link}" target="_blank" style="text-decoration:none; color: #0066cc;">הורדה</a>',
-                                        unsafe_allow_html=True)
-                                    if f['uploaded_by'] == current_user:
-                                        if f_c3.button("מחק", key=f"del_f_{f['id']}"): requests.delete(
-                                            f"{API_URL}/files/{f['id']}"); st.rerun()
-                                    else:
-                                        f_c3.markdown("<span style='color:gray; font-size:14px;'>קריאה בלבד</span>",
-                                                      unsafe_allow_html=True)
-                                    st.divider()
-                            else:
-                                st.info("לא נמצאו מסמכים מצורפים.")
-
-                            with st.form(f"add_file_{proj['id']}"):
-                                st.write("**העלאת מסמך חדש:**")
-                                uploaded_file = st.file_uploader("בחר קובץ", key=f"up_{proj['id']}")
-                                if st.form_submit_button("העלה לארכיון"):
-                                    if uploaded_file:
-                                        requests.post(f"{API_URL}/projects/{proj['id']}/files/",
-                                                      files={"file": (uploaded_file.name, uploaded_file.getvalue())},
-                                                      data={"uploaded_by": current_user})
-                                        st.success("הקובץ הועלה בהצלחה.");
-                                        st.rerun()
-
-                        if st.button("מחיקת פרויקט", key=f"del_proj_{proj['id']}"):
-                            requests.delete(f"{API_URL}/projects/{proj['id']}");
-                            st.rerun()
-    except Exception as e:
-        st.error("שגיאת התחברות לשרת.")
-
-# ---------------------------------------------------------
-# לשונית 3: מרכז המשימות האישיות
-# ---------------------------------------------------------
-with main_tab_personal:
-    st.markdown(f"<h3 style='color: #262730;'>מרכז המשימות שלי</h3>", unsafe_allow_html=True)
-
-    try:
-        res_pt = requests.get(f"{API_URL}/personal_tasks/{current_user}")
-        if res_pt.status_code == 200:
-            p_tasks = res_pt.json()
-
-            # פיצול משימות - אלו של התאריך הנבחר, ושאר המשימות
-            selected_date_tasks = [t for t in p_tasks if t.get('date') == selected_date_str and t['status'] != 'בוצע']
-            other_open_tasks = [t for t in p_tasks if t.get('date') != selected_date_str and t['status'] != 'בוצע']
-
-            # סידור אוטומטי לפי דחיפות (מהדחוף ביותר לפחות דחוף)
-            selected_date_tasks.sort(key=lambda x: x['priority'], reverse=True)
-            other_open_tasks.sort(key=lambda x: x['priority'], reverse=True)
-
-            # --- חלק 1: משימות של התאריך שבחרת בלוח השנה ---
-            st.markdown(
-                f"<h4 style='color: #1E3A8A; background-color: #E2E8F0; padding: 10px; border-radius: 8px;'>📌 משימות לתאריך הנבחר ({selected_date.strftime('%d/%m/%Y')})</h4>",
-                unsafe_allow_html=True)
-
-            if not selected_date_tasks:
-                st.info(f"אין לך משימות פתוחות לתאריך {selected_date.strftime('%d/%m/%Y')}.")
-            else:
-                for t in selected_date_tasks:
-                    tc1, tc2, tc3, tc4 = st.columns([4, 2, 2, 1])
-                    urgency_stars = "🔥" * t['priority']
-                    tc1.write(f"**{t['title']}** <span style='font-size: 12px;'>{urgency_stars}</span>",
-                              unsafe_allow_html=True)
-                    tc2.write(f"📅 {t['date']}")
-
-                    new_status = tc3.selectbox("סטטוס", ["ממתין", "בתהליך", "בוצע"],
-                                               index=["ממתין", "בתהליך", "בוצע"].index(t['status']),
-                                               key=f"main_pt_status_{t['id']}", label_visibility="collapsed")
-                    if new_status != t['status']:
-                        requests.patch(f"{API_URL}/personal_tasks/{t['id']}/status?new_status={new_status}");
-                        st.rerun()
-
-                    if tc4.button("מחק", key=f"main_pt_del_{t['id']}"):
-                        requests.delete(f"{API_URL}/personal_tasks/{t['id']}");
-                        st.rerun()
-                    st.divider()
-
-            # --- חלק 2: כל שאר המשימות שלך ---
-            st.markdown("<h4 style='color: #555; margin-top: 30px;'>📅 שאר המשימות הפתוחות</h4>", unsafe_allow_html=True)
-            if not other_open_tasks:
-                st.write("אין משימות נוספות.")
-            else:
-                for t in other_open_tasks:
-                    tc1, tc2, tc3, tc4 = st.columns([4, 2, 2, 1])
-                    urgency_stars = "🔥" * t['priority']
-                    tc1.write(f"**{t['title']}** <span style='font-size: 12px;'>{urgency_stars}</span>",
-                              unsafe_allow_html=True)
-                    tc2.write(f"📅 {t['date']}")
-
-                    new_status = tc3.selectbox("סטטוס", ["ממתין", "בתהליך", "בוצע"],
-                                               index=["ממתין", "בתהליך", "בוצע"].index(t['status']),
-                                               key=f"main_pt_status_other_{t['id']}", label_visibility="collapsed")
-                    if new_status != t['status']:
-                        requests.patch(f"{API_URL}/personal_tasks/{t['id']}/status?new_status={new_status}");
-                        st.rerun()
-
-                    if tc4.button("מחק", key=f"main_pt_del_other_{t['id']}"):
-                        requests.delete(f"{API_URL}/personal_tasks/{t['id']}");
-                        st.rerun()
-                    st.markdown("<hr style='margin: 0.2em 0; border: 0.5px solid #E2E8F0;'>", unsafe_allow_html=True)
-
-            # --- חלק 3: ארכיון משימות שבוצעו ---
-            done_tasks = [t for t in p_tasks if t['status'] == 'בוצע']
-            if done_tasks:
-                with st.expander("✅ היסטוריית משימות שהושלמו"):
-                    for t in done_tasks:
-                        st.markdown(
-                            f"<span style='text-decoration: line-through; color: #94A3B8;'>{t['title']} (הושלם)</span>",
-                            unsafe_allow_html=True)
-
-    except Exception as e:
-        st.error("שגיאה בטעינת המשימות האישיות.")
+page.run()

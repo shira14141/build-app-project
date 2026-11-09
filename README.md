@@ -1,40 +1,158 @@
-# 🏗️ Build App - Construction Management System
+# 🏗️ BuildApp – מערכת לניהול פרויקטי בנייה
 
-A full-stack, end-to-end web application designed to optimize project management within the construction industry. This system digitizes PMO operations, aligning with Agile methodologies to streamline budget tracking, task prioritization, and secure document management.
+ממשק Streamlit מעל שרת FastAPI: פרויקטים, משימות, תקציב לפי סעיפי דקל, קבצים, יומן אישי, משתמשים והרשאות.
 
-## 🚀 Live Demo
-[Click here to view the live application](https://build-app-project-jfgr28nh4qecpww7krlkgq.streamlit.app/#build-app\docs)
-**🔑 Demo Access:**
-To explore the system's features and Role-Based Access Control (RBAC), please use the following test credentials:
-* **Username:** יוסי הקבלן
-* **Password:** 1234
+## הפעלה מהירה
 
-## ✨ Key Features
-* **Real-Time Budget Tracking:** Integrated management of project expenses, incorporating data logic based on the Dekel pricing catalog.
-* **Agile Task Prioritization:** Interactive modules for managing daily tasks and project milestones.
-* **Secure Document Management:** Centralized hub for uploading and organizing critical construction blueprints and contracts.
-* **Role-Based Access Control (RBAC):** Secure permission system ensuring sensitive data is only accessible to authorized operational users.
+```bash
+pip install -r requirements.txt
+python run_dev.py
+```
 
-## 🛠️ Tech Stack
-* **Language:** Python
-* **Frontend & Backend Logic:** Streamlit
-* **Deployment:** Render / Streamlit Cloud
-* **Version Control:** Git & GitHub
-<img width="1902" height="1013" alt="image" src="https://github.com/user-attachments/assets/22c506e8-c280-4e33-adac-0646ef15fe8e" />
+- הממשק נפתח בדפדפן בכתובת http://localhost:8501
+- שרת ה-API רץ ב-http://127.0.0.1:8000, ותיעוד אינטראקטיבי שלו נמצא ב-http://127.0.0.1:8000/docs
+- אפשר גם להריץ כל צד בנפרד, בשני חלונות: `uvicorn main:app --reload` ו-`streamlit run frontend.py`
 
-<img width="1860" height="1003" alt="image" src="https://github.com/user-attachments/assets/066ec4a3-a408-404c-8775-82194d2dca48" />
-<img width="1507" height="863" alt="image" src="https://github.com/user-attachments/assets/74128181-d0b8-46c3-9708-55f0bb4e5937" />
+בהפעלה הראשונה השרת יוצר את המסד, או מעדכן מסד קיים, באופן אוטומטי. ראו [מיגרציות](#מיגרציות-ושינויים-במבנה-המסד).
 
+## משתמשים ותפקידים
 
+| משתמש | תפקיד | סיסמה התחלתית |
+|---|---|---|
+| שירה | מנהל מערכת | `admin` |
+| יוסי הקבלן, משה מפקח הבנייה | מנהל פרויקט | `1234` |
+| דנה האדריכלית, אבי אינסטלטור, רוני קבלן חשמל | קבלן / בעל מקצוע | `1234` |
 
+בכניסה הראשונה כל משתמש חייב לבחור סיסמה אישית של 8 תווים לפחות. מנהל מערכת יכול להוסיף משתמשים, לשנות תפקידים, להשבית משתמשים ולאפס סיסמאות, בדף "👥 ניהול משתמשים".
 
-## 💻 Local Installation (How to Run)
-Follow these steps to run the application locally on your machine:
+| תפקיד | מה מותר |
+|---|---|
+| מנהל מערכת | הכל, כולל כל הפרויקטים וניהול משתמשים |
+| מנהל פרויקט | ליצור פרויקטים. בפרויקטים שהוא שותף בהם: משימות, תקציב, קבצים, הגדרות ומחיקה |
+| קבלן / בעל מקצוע | לצפות בפרויקטים שהוא שותף בהם, לעדכן סטטוס של המשימות שלו ולהעלות קבצים |
+| צופה | צפייה בלבד בפרויקטים שהוא שותף בהם |
 
-1. Clone the repository:
+כל משתמש רואה רק את הפרויקטים שהוא שותף בהם (חוץ ממנהל מערכת), ורק את היומן האישי שלו. ההרשאות מוגדרות ב-`ROLE_PERMISSIONS` בקובץ [constants.py](constants.py), ונבדקות בשרת בכל בקשה.
+
+**הגנה מניחוש סיסמאות:** אחרי 5 ניסיונות התחברות כושלים, שם המשתמש ננעל ל-10 דקות.
+
+## מבנה הפרויקט
+
+```
+frontend.py          נקודת הכניסה של הממשק: התחברות, תפריט צד, ניווט
+views/               הדפים: dashboard, projects, calendar, users
+ui.py                רכיבים, הרשאות וחישובים משותפים לממשק
+api.py               תקשורת עם השרת: טוקן, cache, תרגום שגיאות לעברית
+constants.py         סטטוסים, קטלוג דקל, תפקידים והרשאות (משותף לשרת ולממשק)
+
+main.py              נקודת הכניסה של השרת: לוג בקשות, בדיקת חיות
+server/
+  config.py          הגדרות (ראו משתני סביבה בהמשך)
+  db.py              חיבור למסד (SQLite או PostgreSQL)
+  models.py          טבלאות
+  schemas.py         ולידציה של קלט ומבנה התשובות
+  auth.py            bcrypt, JWT ובדיקות גישה לפרויקטים
+  ratelimit.py       נעילה אחרי ניסיונות התחברות כושלים
+  storage.py         שמירת קבצים בדיסק
+  logging_setup.py   לוגים
+  migrate.py         מיגרציות אוטומטיות וגיבוי
+  routers/           הנתיבים: auth_users, projects, files, personal, dashboard
+migrations/          מיגרציות Alembic
+tools/copy_database.py  העתקת נתונים בין מסדים (למשל ל-PostgreSQL)
+tests/               בדיקות אוטומטיות
+```
+
+## הגדרות (משתני סביבה)
+
+לכל ההגדרות יש ברירת מחדל, כך שלא חובה להגדיר שום דבר.
+
+| משתנה | ברירת מחדל | תיאור |
+|---|---|---|
+| `BUILDAPP_DB_URL` | `sqlite:///construction.db` | כתובת המסד (בפריסה: כתובת Neon) |
+| `BUILDAPP_API_URL` | `http://127.0.0.1:8000` | כתובת השרת שהממשק פונה אליו. ב-Streamlit Cloud אפשר גם `API_URL` ב-secrets |
+| `BUILDAPP_UPLOAD_DIR` | `uploads/` | תיקיית הקבצים שהועלו |
+| `BUILDAPP_SECRET` | נוצר אוטומטית ב-`.secret_key` | מפתח החתימה של טוקני ההתחברות |
+| `BUILDAPP_MAX_UPLOAD_MB` | `25` | גודל קובץ מקסימלי. צריך לעדכן גם את `.streamlit/config.toml` |
+| `BUILDAPP_TOKEN_HOURS` | `8` | תוקף ההתחברות |
+| `BUILDAPP_FILE_LINK_MINUTES` | `60` | תוקף קישורי צפייה והורדה של קבצים |
+| `BUILDAPP_MAX_LOGIN_FAILURES` / `BUILDAPP_LOGIN_LOCKOUT_MINUTES` | `5` / `10` | נעילה אחרי ניסיונות התחברות כושלים |
+| `BUILDAPP_LOG_DIR` / `BUILDAPP_LOG_LEVEL` | `logs/` / `INFO` | לוגים |
+| `BUILDAPP_SLOW_REQUEST_MS` | `1000` | בקשה איטית מזה נרשמת בלוג כאזהרה |
+
+את `.secret_key`, את `uploads/` ואת `logs/` לא מעלים ל-git, והם כבר מופיעים ב-`.gitignore`.
+
+## בדיקות
+
+```bash
+python -m pytest
+```
+
+הבדיקות רצות על מסד ותיקיות זמניים, כך שהמסד האמיתי לא משתנה. מה נבדק:
+- API והרשאות לפי תפקיד ושותפות בפרויקט, ולידציה, קבצים ויומן אישי
+- לוגים ונעילה אחרי ניסיונות כושלים
+- מיגרציה של מסד ישן, חזרה אחורה, וכלי ההעתקה בין מסדים
+- בדיקת עשן לכל דף בממשק לכל תפקיד, מול שרת אמיתי
+
+## לוגים
+
+הלוגים נכתבים לקונסול ולקובץ `logs/buildapp.log`. הקובץ מתחלף אוטומטית: עד 5 קבצים של 5MB כל אחד.
+
+- **`buildapp.request`:** שורה לכל בקשה, עם הנתיב, קוד התשובה, הזמן, המשתמש ומזהה הבקשה. מזהה הבקשה מוחזר גם בכותרת `X-Request-ID`.
+- **`buildapp.audit`:** פעולות רגישות: התחברות (כולל ניסיונות כושלים ונעילות), החלפת סיסמה, ניהול משתמשים, העלאה ומחיקה של קבצים ומחיקת פרויקטים.
+
+סיסמאות, טוקנים וחתימות של קישורי קבצים אף פעם לא נכתבים ללוג.
+
+## מיגרציות ושינויים במבנה המסד
+
+השרת מריץ `upgrade_database()` בכל הפעלה:
+- **מסד חדש** נבנה מאפס.
+- **מסד קיים** מתעדכן לגרסה האחרונה. אם מדובר ב-SQLite, השרת שומר קודם גיבוי לידו, בשם כמו `construction.backup-YYYYMMDD-HHMMSS.db`.
+
+כדי לשנות את מבנה המסד:
+1. מעדכנים את [server/models.py](server/models.py).
+2. מוסיפים קובץ מיגרציה בתיקייה `migrations/versions/`.
+3. מריצים את השרת או את `python -m alembic upgrade head`.
+
+פקודות שימושיות:
+
+```bash
+python -m alembic current
+```
+
+```bash
+python -m alembic downgrade -1
+```
+
+## מעבר ל-PostgreSQL
+
+הקוד והמיגרציות תומכים ב-PostgreSQL, אבל עוד לא נבדקו מול שרת PostgreSQL אמיתי. מה כן נבדק: ה-DDL שהמיגרציות מייצרות עבור PostgreSQL, וכלי ההעתקה בהעתקה בין שני מסדי SQLite.
+
+1. מתקינים דרייבר:
    ```bash
-   git clone [https://github.com/shira14141/build-app-project.git](https://github.com/shira14141/build-app-project.git)
-   cd build-app-project
-   pip install -r requirements.tx
-   streamlit run app.py
+   pip install "psycopg[binary]"
+   ```
+2. יוצרים מסד ריק ומריצים עליו את המיגרציות:
+   ```bash
+   set BUILDAPP_DB_URL=postgresql+psycopg://buildapp:PASSWORD@localhost:5432/buildapp
+   python -m alembic upgrade head
+   ```
+3. מעתיקים את הנתונים מ-SQLite. הכלי מוודא שהיעד ריק, מעתיק הכל בטרנזקציה אחת ומעדכן את מוני ה-id:
+   ```bash
+   python tools/copy_database.py --source sqlite:///construction.db --target postgresql+psycopg://buildapp:PASSWORD@localhost:5432/buildapp
+   ```
+4. מפעילים את השרת כשהמשתנה `BUILDAPP_DB_URL` מצביע על המסד החדש.
 
+תיקיית `uploads/` לא משתנה במעבר, כי הקבצים שמורים בדיסק ולא במסד.
+
+כדי לראות את ה-SQL שהמיגרציות יריצו, בלי להתחבר למסד:
+
+```bash
+python -m alembic -x db_url=postgresql://u:p@localhost/buildapp upgrade head --sql
+```
+
+## מגבלות ידועות
+
+- **רענון מלא של הדפדפן מנתק את המשתמש.** Streamlit לא שומר מצב בין רענונים. קישור ישיר לדף מוביל אליו אחרי ההתחברות.
+- **הנעילה אחרי ניסיונות כושלים נשמרת בזיכרון של השרת.** היא מתאפסת בכל הפעלה מחדש, ומתאימה לשרת עם תהליך אחד. בהרצה עם כמה תהליכים צריך להעביר אותה ל-Redis או למסד.
+- **סכומים נשמרים כ-Float.** לחשבונאות מדויקת עדיף לעבור לטיפוס Numeric, וזה ידרוש מיגרציה.
+- **שמירת מסד SQLite בתיקייה שמסונכרנת ל-OneDrive** עלולה לגרום לנעילות קבצים. כדאי להעביר את המסד לתיקייה מקומית (דרך `BUILDAPP_DB_URL`) או לעבור ל-PostgreSQL.
