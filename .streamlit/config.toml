@@ -4,3 +4,7 @@ backgroundColor="#FFFFFF"
 secondaryBackgroundColor="#F8F9FA"
 textColor="#262730"
 font="sans serif"
+
+[server]
+# חייב להתאים למגבלה בשרת (BUILDAPP_MAX_UPLOAD_MB, ברירת מחדל 25)
+maxUploadSize = 25

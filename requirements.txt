@@ -1,9 +1,16 @@
-fastapi
-uvicorn
-streamlit
-requests
-sqlalchemy
-python-multipart
-plotly
-pandas
+fastapi==0.129.0
+uvicorn==0.40.0
+streamlit==1.54.0
+requests==2.32.5
+sqlalchemy==2.0.46
+python-multipart==0.0.22
+pandas==2.3.3
+bcrypt==5.0.0
+PyJWT==2.15.1
+alembic==1.20.1
+
+# דרייבר PostgreSQL (לפריסה מול Neon)
 psycopg2-binary
+
+# לבדיקות בלבד
+pytest==9.0.3
